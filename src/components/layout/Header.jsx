@@ -1,23 +1,31 @@
 // Header component
 
-import { Bell, Search } from 'lucide-react';
+import { Bell, Menu } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Avatar } from '../common';
 import { NOTIFICATIONS } from '../../data/notifications';
 
-const Header = ({ title, prefix = 'admin' }) => {
+const Header = ({ title, prefix = 'admin', onOpenMobile }) => {
   const { user } = useAuth();
   const userId = user?.id;
   const unread = NOTIFICATIONS.filter((n) => n.userId === userId && !n.read).length;
 
   return (
-    <header className="h-14 bg-white border-b border-gray-200 flex items-center justify-between px-6 flex-shrink-0">
-      <div>
-        <h2 className="text-sm font-semibold text-gray-900">{title}</h2>
+    <header className="h-14 bg-white border-b border-gray-200 flex items-center justify-between px-4 sm:px-6 flex-shrink-0">
+      <div className="flex items-center gap-3">
+        {/* Mobile Hamburger Menu Toggle */}
+        <button
+          onClick={onOpenMobile}
+          className="p-1.5 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md md:hidden transition-colors"
+          aria-label="Open Mobile Menu"
+        >
+          <Menu className="w-5 h-5" />
+        </button>
+        <h2 className="text-sm font-semibold text-gray-900 truncate max-w-[180px] sm:max-w-none">{title}</h2>
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2 sm:gap-3">
         {/* Notification Bell */}
         <Link
           to={`/${prefix}/notifications`}
@@ -48,3 +56,4 @@ const Header = ({ title, prefix = 'admin' }) => {
 };
 
 export default Header;
+

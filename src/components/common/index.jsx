@@ -110,10 +110,10 @@ export const Avatar = ({ name, size = 'md' }) => {
 
 // PageHeader
 export const PageHeader = ({ title, subtitle, actions, breadcrumbs }) => (
-  <div className="flex items-start justify-between mb-6">
+  <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-6">
     <div>
       {breadcrumbs && (
-        <nav className="flex items-center gap-1.5 text-xs text-gray-400 mb-1.5">
+        <nav className="flex items-center gap-1.5 text-xs text-gray-400 mb-1.5 flex-wrap">
           {breadcrumbs.map((b, i) => (
             <span key={i} className="flex items-center gap-1.5">
               {i > 0 && <span>/</span>}
@@ -125,9 +125,10 @@ export const PageHeader = ({ title, subtitle, actions, breadcrumbs }) => (
       <h1 className="text-xl font-semibold text-gray-900">{title}</h1>
       {subtitle && <p className="text-sm text-gray-500 mt-0.5">{subtitle}</p>}
     </div>
-    {actions && <div className="flex items-center gap-2">{actions}</div>}
+    {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
   </div>
 );
+
 
 // StatCard
 export const StatCard = ({ label, value, icon: Icon, trend, color = 'blue' }) => {

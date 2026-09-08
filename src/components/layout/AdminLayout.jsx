@@ -32,15 +32,25 @@ const getTitle = (pathname) => {
 
 const AdminLayout = () => {
   const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
   const title = getTitle(location.pathname);
 
   return (
     <div className="flex h-screen bg-gray-50 overflow-hidden relative">
-      <AdminSidebar collapsed={collapsed} onToggle={() => setCollapsed((c) => !c)} />
+      <AdminSidebar
+        collapsed={collapsed}
+        onToggle={() => setCollapsed((c) => !c)}
+        mobileOpen={mobileOpen}
+        onCloseMobile={() => setMobileOpen(false)}
+      />
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
-        <Header title={title} prefix="admin" />
-        <main className="flex-1 overflow-y-auto p-6">
+        <Header
+          title={title}
+          prefix="admin"
+          onOpenMobile={() => setMobileOpen(true)}
+        />
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6">
           <Outlet />
         </main>
       </div>
@@ -49,3 +59,4 @@ const AdminLayout = () => {
 };
 
 export default AdminLayout;
+
