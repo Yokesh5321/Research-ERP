@@ -27,6 +27,10 @@ import AdminReports from '../pages/admin/Reports';
 import AdminNotifications from '../pages/admin/Notifications';
 import AdminSettings from '../pages/admin/Settings';
 import AdminProfile from '../pages/admin/Profile';
+import AttendanceDashboard from '../pages/admin/attendance/AttendanceDashboard';
+import MarkAttendance from '../pages/admin/attendance/MarkAttendance';
+import AttendanceHistory from '../pages/admin/attendance/AttendanceHistory';
+import CandidateAttendanceSummary from '../pages/admin/attendance/CandidateAttendanceSummary';
 
 // Worker Pages
 import WorkerDashboard from '../pages/worker/Dashboard';
@@ -45,7 +49,17 @@ import WorkerProfile from '../pages/worker/Profile';
 
 // Route guards
 const RequireAuth = ({ children, role }) => {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+          <p className="text-xs text-gray-500 font-medium">Verifying authorization...</p>
+        </div>
+      </div>
+    );
+  }
   if (!user) return <Navigate to="/login" replace />;
   if (role && user.role !== role) {
     return <Navigate to={user.role === 'admin' ? '/admin/dashboard' : '/worker/dashboard'} replace />;
@@ -54,10 +68,24 @@ const RequireAuth = ({ children, role }) => {
 };
 
 const AppRoutes = () => {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+          <p className="text-xs text-gray-500 font-medium">Loading session...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <Routes>
+      {/* Root redirect */}
+      <Route path="/" element={<Navigate to={user ? (user.role === 'admin' ? '/admin/dashboard' : '/worker/dashboard') : '/login'} replace />} />
+
       {/* Public */}
       <Route path="/login" element={user ? <Navigate to={user.role === 'admin' ? '/admin/dashboard' : '/worker/dashboard'} replace /> : <LoginPage />} />
 
@@ -78,6 +106,10 @@ const AppRoutes = () => {
         <Route path="tasks/:id" element={<AdminTaskDetail />} />
         <Route path="workers" element={<AdminWorkers />} />
         <Route path="workers/:id" element={<AdminWorkerDetail />} />
+        <Route path="attendance" element={<AttendanceDashboard />} />
+        <Route path="attendance/mark" element={<MarkAttendance />} />
+        <Route path="attendance/history" element={<AttendanceHistory />} />
+        <Route path="attendance/candidate/:candidateId" element={<CandidateAttendanceSummary />} />
         <Route path="github" element={<AdminGitHub />} />
         <Route path="executions" element={<AdminExecutions />} />
         <Route path="executions/:id" element={<AdminExecutionDetail />} />

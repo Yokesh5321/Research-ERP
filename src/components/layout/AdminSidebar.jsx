@@ -2,7 +2,7 @@
 
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
-  LayoutDashboard, FolderOpen, CheckSquare, Users, GitBranch, Terminal,
+  LayoutDashboard, FolderOpen, CheckSquare, Users, CalendarCheck, GitBranch, Terminal,
   Video, FileText, BarChart2, Bell, Settings, LogOut, User, ChevronLeft, ChevronRight, Database, X,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
@@ -13,6 +13,7 @@ const NAV_ITEMS = [
   { to: '/admin/projects', icon: FolderOpen, label: 'Projects' },
   { to: '/admin/tasks', icon: CheckSquare, label: 'Tasks' },
   { to: '/admin/workers', icon: Users, label: 'Students / Workers' },
+  { to: '/admin/attendance', icon: CalendarCheck, label: 'Attendance' },
   { to: '/admin/github', icon: GitBranch, label: 'GitHub' },
   { to: '/admin/executions', icon: Terminal, label: 'Code Executions' },
   { to: '/admin/meetings', icon: Video, label: 'Meetings' },
@@ -23,9 +24,9 @@ const NAV_ITEMS = [
 ];
 
 const AdminSidebar = ({ collapsed, onToggle, mobileOpen, onCloseMobile }) => {
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const unread = NOTIFICATIONS.filter((n) => n.userId === 'admin-001' && !n.read).length;
+  const unread = NOTIFICATIONS.filter((n) => (n.userId === user?.id || n.userId === 'admin-001') && !n.read).length;
 
   const handleLogout = async () => {
     if (onCloseMobile) onCloseMobile();

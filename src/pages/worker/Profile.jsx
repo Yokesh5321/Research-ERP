@@ -6,6 +6,7 @@ import toast from 'react-hot-toast';
 import { PageHeader, ProgressBar, Avatar } from '../../components/common';
 import StatusBadge from '../../components/badges/StatusBadge';
 import { useAuth } from '../../context/AuthContext';
+import { supabase } from '../../lib/supabaseClient';
 import { WORKERS } from '../../data/users';
 import { PROJECTS } from '../../data/projects';
 import { TASKS } from '../../data/tasks';
@@ -17,14 +18,15 @@ const WorkerProfile = () => {
   const workerData = WORKERS.find((w) => w.id === userId) || WORKERS[0];
 
   const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
-    name: workerData.name,
-    email: workerData.email,
-    phone: workerData.phone,
-    designation: workerData.designation,
-    department: workerData.department,
-    githubUsername: workerData.githubUsername,
-    skills: workerData.skills,
+    name: user?.name || workerData.name,
+    email: user?.email || workerData.email,
+    phone: user?.phone || workerData.phone,
+    designation: user?.designation || workerData.designation,
+    department: user?.department || workerData.department,
+    githubUsername: user?.githubUsername || workerData.githubUsername,
+    skills: user?.skills || workerData.skills,
   });
 
   const myProjects = PROJECTS.filter((p) => p.team.includes(userId) || p.manager === userId);
@@ -32,9 +34,32 @@ const WorkerProfile = () => {
   const completedTasks = myTasks.filter((t) => t.status === 'completed');
   const activeTasks = myTasks.filter((t) => !['completed', 'failed', 'not_started'].includes(t.status));
 
-  const handleSave = () => {
-    setEditing(false);
-    toast.success('Profile updated successfully');
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      if (user?.authId || user?.id || form.email) {
+        await supabase
+          .from('profiles')
+          .update({
+            name: form.name,
+            full_name: form.name,
+            phone: form.phone,
+            designation: form.designation,
+            department: form.department,
+            github_username: form.githubUsername,
+            skills: form.skills,
+            updated_at: new Date().toISOString(),
+          })
+          .match(user?.authId ? { id: user.authId } : { email: form.email });
+      }
+      setEditing(false);
+      toast.success('Profile updated successfully');
+    } catch (err) {
+      console.error('Update profile error:', err);
+      toast.error('Failed to update profile');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleCancel = () => {

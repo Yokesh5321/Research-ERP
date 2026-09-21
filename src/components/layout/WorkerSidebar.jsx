@@ -59,7 +59,7 @@ const WorkerSidebar = ({ collapsed, onToggle, mobileOpen, onCloseMobile }) => {
             {(!collapsed || mobileOpen) && (
               <div>
                 <p className="text-sm font-semibold text-gray-900 leading-tight">Research ERP</p>
-                <p className="text-xs text-gray-400">Student / Worker</p>
+                <p className="text-xs text-cyan-700 font-medium">Candidate / Student</p>
               </div>
             )}
           </div>

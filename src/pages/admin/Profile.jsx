@@ -5,6 +5,7 @@ import { Mail, Phone, GitBranch, Edit2, Save, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { PageHeader, ProgressBar, Avatar } from '../../components/common';
 import { useAuth } from '../../context/AuthContext';
+import { supabase } from '../../lib/supabaseClient';
 import { ADMIN_USER } from '../../data/users';
 import { formatDate } from '../../utils/formatters';
 
@@ -22,9 +23,34 @@ const AdminProfile = () => {
     skills: profile.skills,
   });
 
-  const handleSave = () => {
-    setEditing(false);
-    toast.success('Profile updated successfully');
+  const [saving, setSaving] = useState(false);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      if (user?.authId || user?.id || profile?.email) {
+        await supabase
+          .from('profiles')
+          .update({
+            name: form.name,
+            full_name: form.name,
+            phone: form.phone,
+            designation: form.designation,
+            department: form.department,
+            github_username: form.githubUsername,
+            skills: form.skills,
+            updated_at: new Date().toISOString(),
+          })
+          .match(user?.authId ? { id: user.authId } : { email: profile.email });
+      }
+      setEditing(false);
+      toast.success('Profile updated successfully');
+    } catch (err) {
+      console.error('Update profile error:', err);
+      toast.error('Failed to update profile');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleCancel = () => {
