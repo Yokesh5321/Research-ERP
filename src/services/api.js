@@ -64,6 +64,7 @@ export const api = {
     },
     getById: (id) => request(`/projects/${id}`),
     create: (project) => request('/projects', { method: 'POST', body: JSON.stringify(project) }),
+    delete: (id) => request(`/projects/${id}`, { method: 'DELETE' }),
   },
 
   // Tasks API

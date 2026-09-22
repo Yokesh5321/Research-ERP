@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Database, Eye, EyeOff, Loader2, ShieldCheck, UserCheck, GraduationCap, ArrowRight } from 'lucide-react';
+import { Eye, EyeOff, Loader2, ShieldCheck, UserCheck, GraduationCap, ArrowRight } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
 
@@ -41,11 +41,11 @@ const LoginPage = () => {
       <div className="w-full max-w-md">
         {/* Logo & Branding */}
         <div className="text-center mb-6">
-          <div className="inline-flex items-center justify-center w-12 h-12 bg-blue-700 rounded-xl mb-3 shadow-sm">
-            <Database className="w-6 h-6 text-white" />
+          <div className="flex justify-center mb-3">
+            <img src="/srm-logo.svg" alt="SRM" className="h-16 object-contain" />
           </div>
-          <h1 className="text-xl font-bold text-gray-900 tracking-tight">Research ERP</h1>
-          <p className="text-xs text-gray-500 mt-1">Research Organization Management System</p>
+          <h1 className="text-xl font-bold text-gray-900 tracking-tight">Research ERP Portal</h1>
+          <p className="text-xs text-gray-500 mt-1 font-medium">SRM · Directorate of Research</p>
         </div>
 
         {/* Card */}
@@ -204,7 +204,7 @@ const LoginPage = () => {
         </div>
 
         <p className="text-center text-xs text-gray-400 mt-6">
-          Research ERP &copy; 2024 · All rights reserved
+          SRM &copy; 2024 · All rights reserved
         </p>
       </div>
     </div>

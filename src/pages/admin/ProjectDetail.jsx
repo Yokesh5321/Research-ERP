@@ -12,6 +12,7 @@ import { GITHUB_COMMITS } from '../../data/github';
 import { MEETINGS } from '../../data/meetings';
 import { DOCUMENTS } from '../../data/documents';
 import { formatDate, formatRelativeTime } from '../../utils/formatters';
+import { api } from '../../services/api';
 
 const workerMap = Object.fromEntries(WORKERS.map((w) => [w.id, w]));
 
@@ -22,18 +23,26 @@ const AdminProjectDetail = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState('Overview');
-
-  const project = PROJECTS.find((p) => p.id === id);
-  const tasks = TASKS.filter((t) => t.project === id);
-  const teamMembers = (project?.team || []).map((tid) => workerMap[tid]).filter(Boolean);
-  const commits = GITHUB_COMMITS.filter((c) => c.repo === project?.githubRepo);
-  const meetings = MEETINGS.filter((m) => m.project === id);
-  const documents = DOCUMENTS.filter((d) => d.project === id);
+  const [project, setProject] = useState(null);
 
   useEffect(() => {
-    const t = setTimeout(() => setLoading(false), 400);
-    return () => clearTimeout(t);
-  }, []);
+    const fetchProject = async () => {
+      try {
+        const res = await api.projects.getById(id);
+        if (res && res.success && res.data) {
+          setProject(res.data);
+          return;
+        }
+      } catch (err) {
+        console.warn('API getById project error:', err);
+      }
+      const localCustom = JSON.parse(localStorage.getItem('custom_projects') || '[]');
+      const found = localCustom.find((p) => p.id === id) || PROJECTS.find((p) => p.id === id);
+      setProject(found || null);
+    };
+
+    fetchProject().finally(() => setLoading(false));
+  }, [id]);
 
   if (loading) return <LoadingState />;
   if (!project) return (
@@ -43,7 +52,16 @@ const AdminProjectDetail = () => {
     </div>
   );
 
-  const manager = workerMap[project.manager];
+  const managerId = project.manager || project.manager_id;
+  const startDate = project.startDate || project.start_date;
+  const endDate = project.endDate || project.end_date;
+  const githubRepo = project.githubRepo || project.github_repo;
+  const tasks = TASKS.filter((t) => t.project === id);
+  const teamMembers = (project.team || []).map((tid) => workerMap[tid] || { id: tid, name: tid }).filter(Boolean);
+  const commits = GITHUB_COMMITS.filter((c) => c.repo === githubRepo);
+  const meetings = MEETINGS.filter((m) => m.project === id);
+  const documents = DOCUMENTS.filter((d) => d.project === id);
+  const manager = workerMap[managerId] || { name: managerId || '—' };
 
   return (
     <div>
@@ -79,21 +97,21 @@ const AdminProjectDetail = () => {
           </div>
           <div>
             <p className="text-xs text-gray-400 mb-1">Timeline</p>
-            <p className="text-sm text-gray-700">{formatDate(project.startDate)} → {formatDate(project.endDate)}</p>
+            <p className="text-sm text-gray-700">{formatDate(startDate)} → {formatDate(endDate)}</p>
           </div>
           <div>
             <p className="text-xs text-gray-400 mb-1">Progress</p>
             <div className="flex items-center gap-2">
-              <ProgressBar value={project.progress} className="flex-1" />
-              <span className="text-sm font-medium text-gray-700">{project.progress}%</span>
+              <ProgressBar value={project.progress || 0} className="flex-1" />
+              <span className="text-sm font-medium text-gray-700">{project.progress || 0}%</span>
             </div>
           </div>
           <div>
             <p className="text-xs text-gray-400 mb-1">GitHub Repo</p>
-            {project.githubRepo ? (
+            {githubRepo ? (
               <div className="flex items-center gap-1.5">
                 <GitBranch className="w-3.5 h-3.5 text-gray-500" />
-                <span className="text-xs text-blue-600 font-mono">{project.githubRepo}</span>
+                <span className="text-xs text-blue-600 font-mono">{githubRepo}</span>
               </div>
             ) : <span className="text-sm text-gray-400">Not linked</span>}
           </div>
@@ -130,12 +148,12 @@ const AdminProjectDetail = () => {
             <div className="card p-5">
               <h3 className="text-sm font-semibold text-gray-800 mb-3">Team ({teamMembers.length})</h3>
               <div className="space-y-2">
-                {teamMembers.map((w) => (
-                  <div key={w.id} className="flex items-center gap-2">
+                {teamMembers.map((w, idx) => (
+                  <div key={w.id || idx} className="flex items-center gap-2">
                     <Avatar name={w.name} size="sm" />
                     <div>
                       <p className="text-xs font-medium text-gray-700">{w.name}</p>
-                      <p className="text-xs text-gray-400">{w.designation}</p>
+                      <p className="text-xs text-gray-400">{w.designation || 'Team Member'}</p>
                     </div>
                   </div>
                 ))}
@@ -178,16 +196,18 @@ const AdminProjectDetail = () => {
 
       {tab === 'Team' && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {teamMembers.map((w) => (
-            <div key={w.id} className="card p-4 flex items-start gap-3">
+          {teamMembers.map((w, idx) => (
+            <div key={w.id || idx} className="card p-4 flex items-start gap-3">
               <Avatar name={w.name} size="md" />
               <div>
                 <p className="text-sm font-semibold text-gray-800">{w.name}</p>
-                <p className="text-xs text-gray-500">{w.designation} · {w.department}</p>
-                <p className="text-xs text-gray-400 mt-1">{w.email}</p>
-                <div className="mt-2">
-                  <Link to={`/admin/workers/${w.id}`} className="text-xs text-blue-600 hover:underline">View profile →</Link>
-                </div>
+                <p className="text-xs text-gray-500">{w.designation || 'Team Member'} {w.department ? `· ${w.department}` : ''}</p>
+                {w.email && <p className="text-xs text-gray-400 mt-1">{w.email}</p>}
+                {w.id && (
+                  <div className="mt-2">
+                    <Link to={`/admin/workers/${w.id}`} className="text-xs text-blue-600 hover:underline">View profile →</Link>
+                  </div>
+                )}
               </div>
             </div>
           ))}
@@ -199,7 +219,7 @@ const AdminProjectDetail = () => {
           <div className="card-header">
             <div className="flex items-center gap-2">
               <GitBranch className="w-4 h-4" />
-              <span className="text-sm font-semibold">{project.githubRepo || 'No repository linked'}</span>
+              <span className="text-sm font-semibold">{githubRepo || 'No repository linked'}</span>
             </div>
           </div>
           <div className="divide-y divide-gray-100">

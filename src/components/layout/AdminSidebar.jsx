@@ -3,7 +3,7 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, FolderOpen, CheckSquare, Users, CalendarCheck, GitBranch, Terminal,
-  Video, FileText, BarChart2, Bell, Settings, LogOut, User, ChevronLeft, ChevronRight, Database, X,
+  Video, FileText, BarChart2, Bell, Settings, LogOut, User, ChevronLeft, ChevronRight, X,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { NOTIFICATIONS } from '../../data/notifications';
@@ -55,13 +55,11 @@ const AdminSidebar = ({ collapsed, onToggle, mobileOpen, onCloseMobile }) => {
         {/* Logo */}
         <div className={`flex items-center justify-between px-4 py-4 border-b border-gray-200 ${collapsed ? 'md:justify-center' : ''}`}>
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-blue-700 rounded-md flex items-center justify-center flex-shrink-0">
-              <Database className="w-4 h-4 text-white" />
-            </div>
+            <img src="/srm-seal.svg" alt="SRM Logo" className="w-9 h-9 object-contain flex-shrink-0" />
             {(!collapsed || mobileOpen) && (
               <div>
-                <p className="text-sm font-semibold text-gray-900 leading-tight">Research ERP</p>
-                <p className="text-xs text-gray-400">Admin Panel</p>
+                <p className="text-sm font-bold text-gray-900 leading-tight">SRM</p>
+                <p className="text-[11px] text-blue-700 font-semibold">Research ERP · Admin</p>
               </div>
             )}
           </div>

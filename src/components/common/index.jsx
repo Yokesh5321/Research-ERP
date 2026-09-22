@@ -193,3 +193,23 @@ export const Modal = ({ open, onClose, title, children, size = 'md' }) => {
     </div>
   );
 };
+
+// SRM Logo component
+export const SrmLogo = ({ variant = 'seal', className = '', alt = 'SRM Logo' }) => {
+  if (variant === 'full') {
+    return (
+      <img
+        src="/srm-logo.svg"
+        alt={alt}
+        className={`object-contain ${className || 'h-10'}`}
+      />
+    );
+  }
+  return (
+    <img
+      src="/srm-seal.svg"
+      alt={alt}
+      className={`object-contain ${className || 'w-8 h-8'}`}
+    />
+  );
+};

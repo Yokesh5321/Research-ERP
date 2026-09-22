@@ -10,6 +10,7 @@ import { PROJECTS, PROJECT_STATUSES, PROJECT_PRIORITIES } from '../../data/proje
 import { WORKERS } from '../../data/users';
 import { formatDate } from '../../utils/formatters';
 import AddProjectModal from './modals/AddProjectModal';
+import { api } from '../../services/api';
 
 const workerMap = Object.fromEntries(WORKERS.map((w) => [w.id, w]));
 const PAGE_SIZE = 8;
@@ -17,7 +18,7 @@ const PAGE_SIZE = 8;
 const AdminProjects = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
-  const [projects, setProjects] = useState(PROJECTS);
+  const [projects, setProjects] = useState([]);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [priorityFilter, setPriorityFilter] = useState('');
@@ -27,19 +28,50 @@ const AdminProjects = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
 
+  const fetchProjects = async () => {
+    setLoading(true);
+    try {
+      const localCustom = JSON.parse(localStorage.getItem('custom_projects') || '[]');
+      const res = await api.projects.getAll();
+      let fetchedList = [];
+      if (res && res.success && Array.isArray(res.data)) {
+        fetchedList = res.data;
+      }
+
+      // Combine fetched projects with any localCustom projects to ensure zero data loss
+      const knownIds = new Set(fetchedList.map((p) => p.id));
+      const combined = [...localCustom.filter((cp) => !knownIds.has(cp.id)), ...fetchedList];
+      
+      // Fallback to static PROJECTS if combined list is empty
+      if (combined.length === 0) {
+        setProjects(PROJECTS);
+      } else {
+        setProjects(combined);
+      }
+    } catch (err) {
+      console.warn('Failed to fetch projects from server API, using local storage fallback:', err);
+      const localCustom = JSON.parse(localStorage.getItem('custom_projects') || '[]');
+      const ids = new Set(localCustom.map((p) => p.id));
+      setProjects([...localCustom, ...PROJECTS.filter((p) => !ids.has(p.id))]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const t = setTimeout(() => setLoading(false), 400);
-    return () => clearTimeout(t);
+    fetchProjects();
   }, []);
 
   const filtered = useMemo(() => {
     let list = projects;
-    if (search) list = list.filter((p) => p.name.toLowerCase().includes(search.toLowerCase()) || p.category.toLowerCase().includes(search.toLowerCase()));
+    if (search) list = list.filter((p) => p.name.toLowerCase().includes(search.toLowerCase()) || (p.category && p.category.toLowerCase().includes(search.toLowerCase())));
     if (statusFilter) list = list.filter((p) => p.status === statusFilter);
     if (priorityFilter) list = list.filter((p) => p.priority === priorityFilter);
     list = [...list].sort((a, b) => {
-      let va = a[sortField], vb = b[sortField];
-      if (typeof va === 'string') va = va.toLowerCase(), vb = vb.toLowerCase();
+      let va = a[sortField] || a[sortField.replace(/([A-Z])/g, "_$1").toLowerCase()] || '';
+      let vb = b[sortField] || b[sortField.replace(/([A-Z])/g, "_$1").toLowerCase()] || '';
+      if (typeof va === 'string') va = va.toLowerCase();
+      if (typeof vb === 'string') vb = vb.toLowerCase();
       if (va < vb) return sortDir === 'asc' ? -1 : 1;
       if (va > vb) return sortDir === 'asc' ? 1 : -1;
       return 0;
@@ -48,23 +80,71 @@ const AdminProjects = () => {
   }, [projects, search, statusFilter, priorityFilter, sortField, sortDir]);
 
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE) || 1;
 
   const toggleSort = (field) => {
     if (sortField === field) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
     else { setSortField(field); setSortDir('asc'); }
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    try {
+      await api.projects.delete(deleteTarget);
+    } catch (err) {
+      console.warn('Delete project API error:', err);
+    }
+
+    const localCustom = JSON.parse(localStorage.getItem('custom_projects') || '[]');
+    localStorage.setItem('custom_projects', JSON.stringify(localCustom.filter((p) => p.id !== deleteTarget)));
+
     setProjects((ps) => ps.filter((p) => p.id !== deleteTarget));
     setDeleteTarget(null);
     toast.success('Project deleted');
   };
 
-  const handleAdd = (newProject) => {
-    setProjects((ps) => [{ ...newProject, id: `p-${Date.now()}`, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), progress: 0, totalTasks: 0, completedTasks: 0 }, ...ps]);
-    setShowAddModal(false);
-    toast.success('Project created successfully');
+  const handleAdd = async (formData) => {
+    try {
+      const res = await api.projects.create(formData);
+      const created = (res && res.success && res.data) ? res.data : {
+        ...formData,
+        id: `p-${Date.now().toString().slice(-6)}`,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        progress: 0,
+        totalTasks: 0,
+        completedTasks: 0,
+        team: Array.isArray(formData.team) ? formData.team : [],
+      };
+
+      // Save to localStorage so project persists even after page reloads
+      const localCustom = JSON.parse(localStorage.getItem('custom_projects') || '[]');
+      const updatedLocal = [created, ...localCustom.filter((p) => p.id !== created.id)];
+      localStorage.setItem('custom_projects', JSON.stringify(updatedLocal));
+
+      setProjects((ps) => [created, ...ps.filter((p) => p.id !== created.id)]);
+      setShowAddModal(false);
+      toast.success('Project created successfully');
+    } catch (err) {
+      console.error('Error creating project via API:', err);
+      // Client fallback create
+      const created = {
+        ...formData,
+        id: `p-${Date.now().toString().slice(-6)}`,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        progress: 0,
+        totalTasks: 0,
+        completedTasks: 0,
+        team: Array.isArray(formData.team) ? formData.team : [],
+      };
+      const localCustom = JSON.parse(localStorage.getItem('custom_projects') || '[]');
+      localStorage.setItem('custom_projects', JSON.stringify([created, ...localCustom]));
+
+      setProjects((ps) => [created, ...ps]);
+      setShowAddModal(false);
+      toast.success('Project created successfully (saved locally)');
+    }
   };
 
   if (loading) return <LoadingState message="Loading projects..." />;
@@ -120,41 +200,48 @@ const AdminProjects = () => {
               {paginated.length === 0 ? (
                 <tr><td colSpan={9} className="text-center py-12 text-gray-400">No projects found</td></tr>
               ) : (
-                paginated.map((p) => (
-                  <tr key={p.id}>
-                    <td>
-                      <Link to={`/admin/projects/${p.id}`} className="text-blue-600 hover:underline font-medium">
-                        {p.name.length > 40 ? p.name.slice(0, 40) + '...' : p.name}
-                      </Link>
-                      <p className="text-xs text-gray-400 mt-0.5">{p.category}</p>
-                    </td>
-                    <td className="text-xs">{workerMap[p.manager]?.name || '—'}</td>
-                    <td className="text-xs text-gray-500">{p.team.length} members</td>
-                    <td><StatusBadge type="project" value={p.status} /></td>
-                    <td><StatusBadge type="priority" value={p.priority} /></td>
-                    <td>
-                      <div className="flex items-center gap-2 min-w-[80px]">
-                        <ProgressBar value={p.progress} className="flex-1" />
-                        <span className="text-xs text-gray-500 w-8">{p.progress}%</span>
-                      </div>
-                    </td>
-                    <td className="text-xs text-gray-500 whitespace-nowrap">{formatDate(p.startDate)}</td>
-                    <td className="text-xs text-gray-500 whitespace-nowrap">{formatDate(p.endDate)}</td>
-                    <td>
-                      <div className="flex items-center gap-1">
-                        <button onClick={() => navigate(`/admin/projects/${p.id}`)} className="btn btn-ghost btn-sm text-gray-500 hover:text-blue-600" title="View">
-                          <Eye className="w-3.5 h-3.5" />
-                        </button>
-                        <button onClick={() => toast.success('Edit functionality coming soon')} className="btn btn-ghost btn-sm text-gray-500 hover:text-amber-600" title="Edit">
-                          <Edit2 className="w-3.5 h-3.5" />
-                        </button>
-                        <button onClick={() => setDeleteTarget(p.id)} className="btn btn-ghost btn-sm text-gray-500 hover:text-red-600" title="Delete">
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                paginated.map((p) => {
+                  const managerId = p.manager || p.manager_id;
+                  const startDate = p.startDate || p.start_date;
+                  const endDate = p.endDate || p.end_date;
+                  const teamMembers = Array.isArray(p.team) ? p.team : [];
+
+                  return (
+                    <tr key={p.id}>
+                      <td>
+                        <Link to={`/admin/projects/${p.id}`} className="text-blue-600 hover:underline font-medium">
+                          {p.name.length > 40 ? p.name.slice(0, 40) + '...' : p.name}
+                        </Link>
+                        <p className="text-xs text-gray-400 mt-0.5">{p.category}</p>
+                      </td>
+                      <td className="text-xs">{workerMap[managerId]?.name || managerId || '—'}</td>
+                      <td className="text-xs text-gray-500">{teamMembers.length} members</td>
+                      <td><StatusBadge type="project" value={p.status} /></td>
+                      <td><StatusBadge type="priority" value={p.priority} /></td>
+                      <td>
+                        <div className="flex items-center gap-2 min-w-[80px]">
+                          <ProgressBar value={p.progress || 0} className="flex-1" />
+                          <span className="text-xs text-gray-500 w-8">{p.progress || 0}%</span>
+                        </div>
+                      </td>
+                      <td className="text-xs text-gray-500 whitespace-nowrap">{formatDate(startDate)}</td>
+                      <td className="text-xs text-gray-500 whitespace-nowrap">{formatDate(endDate)}</td>
+                      <td>
+                        <div className="flex items-center gap-1">
+                          <button onClick={() => navigate(`/admin/projects/${p.id}`)} className="btn btn-ghost btn-sm text-gray-500 hover:text-blue-600" title="View">
+                            <Eye className="w-3.5 h-3.5" />
+                          </button>
+                          <button onClick={() => toast.success('Edit functionality coming soon')} className="btn btn-ghost btn-sm text-gray-500 hover:text-amber-600" title="Edit">
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+                          <button onClick={() => setDeleteTarget(p.id)} className="btn btn-ghost btn-sm text-gray-500 hover:text-red-600" title="Delete">
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
