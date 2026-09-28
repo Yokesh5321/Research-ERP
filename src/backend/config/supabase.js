@@ -4,11 +4,11 @@ import dotenv from "dotenv";
 dotenv.config();
 
 const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "https://nsunkgfvlgxvdjxfioth.supabase.co";
-const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || "";
+const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || "sb_publishable_GB4BqS3Qgk6VglbrIB5QXw_DbESoRVG";
 
 export const supabase = createClient(
   supabaseUrl,
-  supabaseAnonKey || "placeholder-anon-key",
+  supabaseAnonKey,
   {
     auth: {
       persistSession: false,
