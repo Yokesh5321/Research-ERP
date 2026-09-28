@@ -3,22 +3,22 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, FolderOpen, CheckSquare, Users, CalendarCheck, GitBranch, Terminal,
-  Video, FileText, BarChart2, Bell, Settings, LogOut, User, ChevronLeft, ChevronRight, X,
+  Video, FileText, BarChart2, Award, Bell, Settings, LogOut, User, ChevronLeft, ChevronRight, X,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { NOTIFICATIONS } from '../../data/notifications';
 
 const NAV_ITEMS = [
   { to: '/admin/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/admin/projects', icon: FolderOpen, label: 'Projects' },
-  { to: '/admin/tasks', icon: CheckSquare, label: 'Tasks' },
-  { to: '/admin/workers', icon: Users, label: 'Students / Workers' },
+  { to: '/admin/projects', icon: FolderOpen, label: 'Teams' },
+  { to: '/admin/workers', icon: Users, label: 'Student Interns' },
   { to: '/admin/attendance', icon: CalendarCheck, label: 'Attendance' },
   { to: '/admin/github', icon: GitBranch, label: 'GitHub' },
   { to: '/admin/executions', icon: Terminal, label: 'Code Executions' },
   { to: '/admin/meetings', icon: Video, label: 'Meetings' },
   { to: '/admin/documents', icon: FileText, label: 'Documents' },
   { to: '/admin/reports', icon: BarChart2, label: 'Reports' },
+  { to: '/admin/certificates', icon: Award, label: 'Certificates' },
   { to: '/admin/notifications', icon: Bell, label: 'Notifications' },
   { to: '/admin/settings', icon: Settings, label: 'Settings' },
 ];

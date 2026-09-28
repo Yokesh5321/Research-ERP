@@ -16,7 +16,7 @@ import { api } from '../../services/api';
 
 const workerMap = Object.fromEntries(WORKERS.map((w) => [w.id, w]));
 
-const TABS = ['Overview', 'Tasks', 'Team', 'GitHub', 'Documents', 'Meetings'];
+const TABS = ['Overview', 'Student Interns', 'GitHub', 'Documents', 'Meetings'];
 
 const AdminProjectDetail = () => {
   const { id } = useParams();
@@ -48,7 +48,7 @@ const AdminProjectDetail = () => {
   if (!project) return (
     <div>
       <button onClick={() => navigate(-1)} className="btn btn-ghost btn-sm mb-4"><ArrowLeft className="w-4 h-4" /> Back</button>
-      <EmptyState title="Project not found" message="The project you're looking for doesn't exist." />
+      <EmptyState title="Team / Project not found" message="The team or project you're looking for doesn't exist." />
     </div>
   );
 
@@ -56,62 +56,63 @@ const AdminProjectDetail = () => {
   const startDate = project.startDate || project.start_date;
   const endDate = project.endDate || project.end_date;
   const githubRepo = project.githubRepo || project.github_repo;
-  const tasks = TASKS.filter((t) => t.project === id);
   const teamMembers = (project.team || []).map((tid) => workerMap[tid] || { id: tid, name: tid }).filter(Boolean);
   const commits = GITHUB_COMMITS.filter((c) => c.repo === githubRepo);
   const meetings = MEETINGS.filter((m) => m.project === id);
   const documents = DOCUMENTS.filter((d) => d.project === id);
   const manager = workerMap[managerId] || { name: managerId || '—' };
+  const teamTitle = project.teamName || `Team ${project.name.split(' ')[0]}`;
 
   return (
-    <div>
-      <div className="flex items-center gap-2 mb-4">
-        <button onClick={() => navigate('/admin/projects')} className="btn btn-ghost btn-sm text-gray-500">
-          <ArrowLeft className="w-4 h-4" /> Projects
+    <div className="space-y-6">
+      <div className="flex items-center gap-2 mb-2">
+        <button onClick={() => navigate('/admin/projects')} className="btn btn-ghost btn-sm text-gray-600 hover:text-blue-700 text-sm">
+          <ArrowLeft className="w-4 h-4" /> Teams
         </button>
         <span className="text-gray-300">/</span>
-        <span className="text-sm text-gray-600">{project.name}</span>
+        <span className="text-sm font-semibold text-blue-700">{teamTitle}</span>
       </div>
 
       {/* Header */}
-      <div className="card mb-4 p-5">
+      <div className="card shadow-sm p-6">
         <div className="flex items-start justify-between flex-wrap gap-4">
           <div>
             <div className="flex items-center gap-3 flex-wrap mb-2">
+              <span className="badge badge-blue text-sm px-3 py-1 font-bold">{teamTitle}</span>
               <StatusBadge type="project" value={project.status} />
               <StatusBadge type="priority" value={project.priority} />
               <span className="badge badge-gray">{project.category}</span>
             </div>
-            <h2 className="text-lg font-semibold text-gray-900">{project.name}</h2>
-            <p className="text-sm text-gray-500 mt-1 max-w-2xl">{project.description}</p>
+            <h1 className="text-2xl font-extrabold text-gray-900 mt-1">{project.name}</h1>
+            <p className="text-base text-gray-600 mt-2 max-w-3xl leading-relaxed">{project.description}</p>
           </div>
         </div>
 
-        <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="mt-6 pt-5 border-t border-gray-100 grid grid-cols-2 md:grid-cols-4 gap-6">
           <div>
-            <p className="text-xs text-gray-400 mb-1">Project Manager</p>
-            <div className="flex items-center gap-2">
-              <Avatar name={manager?.name} size="sm" />
-              <span className="text-sm font-medium text-gray-700">{manager?.name || '—'}</span>
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Project Lead</p>
+            <div className="flex items-center gap-2.5">
+              <Avatar name={manager?.name} size="md" />
+              <span className="text-base font-bold text-gray-800">{manager?.name || '—'}</span>
             </div>
           </div>
           <div>
-            <p className="text-xs text-gray-400 mb-1">Timeline</p>
-            <p className="text-sm text-gray-700">{formatDate(startDate)} → {formatDate(endDate)}</p>
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Timeline</p>
+            <p className="text-base font-medium text-gray-800">{formatDate(startDate)} → {formatDate(endDate)}</p>
           </div>
           <div>
-            <p className="text-xs text-gray-400 mb-1">Progress</p>
-            <div className="flex items-center gap-2">
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Overall Progress</p>
+            <div className="flex items-center gap-3">
               <ProgressBar value={project.progress || 0} className="flex-1" />
-              <span className="text-sm font-medium text-gray-700">{project.progress || 0}%</span>
+              <span className="text-base font-bold text-gray-800">{project.progress || 0}%</span>
             </div>
           </div>
           <div>
-            <p className="text-xs text-gray-400 mb-1">GitHub Repo</p>
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">GitHub Repository</p>
             {githubRepo ? (
-              <div className="flex items-center gap-1.5">
-                <GitBranch className="w-3.5 h-3.5 text-gray-500" />
-                <span className="text-xs text-blue-600 font-mono">{githubRepo}</span>
+              <div className="flex items-center gap-2 text-blue-700 font-mono font-semibold text-sm">
+                <GitBranch className="w-4 h-4 text-gray-500" />
+                <span>{githubRepo}</span>
               </div>
             ) : <span className="text-sm text-gray-400">Not linked</span>}
           </div>
@@ -119,41 +120,33 @@ const AdminProjectDetail = () => {
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-gray-200 mb-4 overflow-x-auto">
+      <div className="flex border-b border-gray-200 overflow-x-auto gap-2">
         {TABS.map((t) => (
-          <button key={t} onClick={() => setTab(t)} className={`tab-link ${tab === t ? 'active' : ''}`}>{t}</button>
+          <button key={t} onClick={() => setTab(t)} className={`tab-link text-base ${tab === t ? 'active font-bold' : ''}`}>{t}</button>
         ))}
       </div>
 
       {/* Tab Content */}
       {tab === 'Overview' && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="md:col-span-2 space-y-4">
-            <div className="card p-5">
-              <h3 className="text-sm font-semibold text-gray-800 mb-3">Task Summary</h3>
-              <div className="grid grid-cols-3 gap-4">
-                <div className="text-center"><p className="text-2xl font-semibold text-gray-900">{tasks.length}</p><p className="text-xs text-gray-500">Total Tasks</p></div>
-                <div className="text-center"><p className="text-2xl font-semibold text-green-600">{tasks.filter((t) => t.status === 'completed').length}</p><p className="text-xs text-gray-500">Completed</p></div>
-                <div className="text-center"><p className="text-2xl font-semibold text-blue-600">{tasks.filter((t) => t.status === 'in_progress').length}</p><p className="text-xs text-gray-500">In Progress</p></div>
-              </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="md:col-span-2 space-y-6">
+            <div className="card shadow-sm p-6">
+              <h3 className="text-lg font-bold text-gray-900 mb-3">About this Research Project</h3>
+              <p className="text-base text-gray-700 leading-relaxed">
+                {project.description_long || project.description}
+              </p>
             </div>
-            {project.description_long && (
-              <div className="card p-5">
-                <h3 className="text-sm font-semibold text-gray-800 mb-2">About this Project</h3>
-                <p className="text-sm text-gray-600 leading-relaxed">{project.description_long}</p>
-              </div>
-            )}
           </div>
-          <div className="space-y-4">
-            <div className="card p-5">
-              <h3 className="text-sm font-semibold text-gray-800 mb-3">Team ({teamMembers.length})</h3>
-              <div className="space-y-2">
+          <div className="space-y-6">
+            <div className="card shadow-sm p-6">
+              <h3 className="text-lg font-bold text-gray-900 mb-4">Assigned Student Interns ({teamMembers.length})</h3>
+              <div className="space-y-3">
                 {teamMembers.map((w, idx) => (
-                  <div key={w.id || idx} className="flex items-center gap-2">
-                    <Avatar name={w.name} size="sm" />
+                  <div key={w.id || idx} className="flex items-center gap-3 p-2 rounded-md hover:bg-gray-50">
+                    <Avatar name={w.name} size="md" />
                     <div>
-                      <p className="text-xs font-medium text-gray-700">{w.name}</p>
-                      <p className="text-xs text-gray-400">{w.designation || 'Team Member'}</p>
+                      <p className="text-sm font-bold text-gray-800">{w.name}</p>
+                      <p className="text-xs text-gray-500">{w.designation || 'Student Intern'}</p>
                     </div>
                   </div>
                 ))}
@@ -163,49 +156,19 @@ const AdminProjectDetail = () => {
         </div>
       )}
 
-      {tab === 'Tasks' && (
-        <div className="card">
-          <div className="table-container">
-            <table className="table">
-              <thead><tr><th>Task</th><th>Assigned To</th><th>Priority</th><th>Status</th><th>Due Date</th><th>Progress</th></tr></thead>
-              <tbody>
-                {tasks.length === 0 ? (
-                  <tr><td colSpan={6} className="text-center py-10 text-gray-400">No tasks for this project</td></tr>
-                ) : (
-                  tasks.map((t) => (
-                    <tr key={t.id}>
-                      <td><Link to={`/admin/tasks/${t.id}`} className="text-blue-600 hover:underline text-xs font-medium">{t.title}</Link></td>
-                      <td className="text-xs">{workerMap[t.assignedTo]?.name || '—'}</td>
-                      <td><StatusBadge type="priority" value={t.priority} /></td>
-                      <td><StatusBadge type="task" value={t.status} /></td>
-                      <td className="text-xs text-gray-500">{formatDate(t.dueDate)}</td>
-                      <td>
-                        <div className="flex items-center gap-2">
-                          <ProgressBar value={t.progress} className="w-16" />
-                          <span className="text-xs text-gray-500">{t.progress}%</span>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {tab === 'Team' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {tab === 'Student Interns' && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {teamMembers.map((w, idx) => (
-            <div key={w.id || idx} className="card p-4 flex items-start gap-3">
-              <Avatar name={w.name} size="md" />
+            <div key={w.id || idx} className="card p-5 flex items-start gap-4 shadow-sm hover:border-blue-300 transition-colors">
+              <Avatar name={w.name} size="lg" />
               <div>
-                <p className="text-sm font-semibold text-gray-800">{w.name}</p>
-                <p className="text-xs text-gray-500">{w.designation || 'Team Member'} {w.department ? `· ${w.department}` : ''}</p>
+                <p className="text-base font-bold text-gray-900">{w.name}</p>
+                <p className="text-xs font-semibold text-blue-700 mt-0.5">{w.designation || 'Student Intern'}</p>
+                <p className="text-xs text-gray-500 mt-1">{w.department || 'SRM Research Lab'}</p>
                 {w.email && <p className="text-xs text-gray-400 mt-1">{w.email}</p>}
                 {w.id && (
-                  <div className="mt-2">
-                    <Link to={`/admin/workers/${w.id}`} className="text-xs text-blue-600 hover:underline">View profile →</Link>
+                  <div className="mt-3">
+                    <Link to={`/admin/workers/${w.id}`} className="text-xs font-bold text-blue-600 hover:underline">View Profile →</Link>
                   </div>
                 )}
               </div>

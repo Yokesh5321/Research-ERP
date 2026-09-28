@@ -147,95 +147,102 @@ const AdminProjects = () => {
     }
   };
 
-  if (loading) return <LoadingState message="Loading projects..." />;
+  if (loading) return <LoadingState message="Loading teams..." />;
 
   return (
     <div>
       <PageHeader
-        title="Projects"
-        subtitle={`${projects.length} projects total`}
+        title="Teams"
+        subtitle={`${projects.length} teams total`}
         actions={
-          <button onClick={() => setShowAddModal(true)} className="btn btn-primary">
-            <Plus className="w-4 h-4" /> Add Project
+          <button onClick={() => setShowAddModal(true)} className="btn btn-primary text-base px-4 py-2.5">
+            <Plus className="w-5 h-5" /> Add Team
           </button>
         }
       />
 
       {/* Filters */}
-      <div className="flex flex-wrap gap-3 mb-4">
-        <SearchBar value={search} onChange={setSearch} placeholder="Search projects..." className="w-64" />
-        <select value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }} className="select w-40">
+      <div className="flex flex-wrap gap-3 mb-5">
+        <SearchBar value={search} onChange={setSearch} placeholder="Search teams or projects..." className="w-72" />
+        <select value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }} className="select w-44 text-base">
           <option value="">All Status</option>
           {PROJECT_STATUSES.map((s) => <option key={s} value={s}>{s.replace('_', ' ').replace(/\b\w/g, (c) => c.toUpperCase())}</option>)}
         </select>
-        <select value={priorityFilter} onChange={(e) => { setPriorityFilter(e.target.value); setPage(1); }} className="select w-36">
+        <select value={priorityFilter} onChange={(e) => { setPriorityFilter(e.target.value); setPage(1); }} className="select w-40 text-base">
           <option value="">All Priority</option>
           {PROJECT_PRIORITIES.map((p) => <option key={p} value={p}>{p.charAt(0).toUpperCase() + p.slice(1)}</option>)}
         </select>
         {(statusFilter || priorityFilter || search) && (
-          <button onClick={() => { setSearch(''); setStatusFilter(''); setPriorityFilter(''); setPage(1); }} className="btn btn-ghost btn-sm text-gray-500">
+          <button onClick={() => { setSearch(''); setStatusFilter(''); setPriorityFilter(''); setPage(1); }} className="btn btn-ghost btn-sm text-gray-500 text-sm">
             Clear filters
           </button>
         )}
       </div>
 
       {/* Table */}
-      <div className="card">
+      <div className="card shadow-sm">
         <div className="table-container">
           <table className="table">
             <thead>
               <tr>
-                <th className="cursor-pointer" onClick={() => toggleSort('name')}>Project Name {sortField === 'name' ? (sortDir === 'asc' ? '↑' : '↓') : ''}</th>
-                <th>Manager</th>
-                <th>Team</th>
-                <th className="cursor-pointer" onClick={() => toggleSort('status')}>Status {sortField === 'status' ? (sortDir === 'asc' ? '↑' : '↓') : ''}</th>
-                <th className="cursor-pointer" onClick={() => toggleSort('priority')}>Priority {sortField === 'priority' ? (sortDir === 'asc' ? '↑' : '↓') : ''}</th>
-                <th>Progress</th>
-                <th className="cursor-pointer" onClick={() => toggleSort('startDate')}>Start</th>
-                <th className="cursor-pointer" onClick={() => toggleSort('endDate')}>End</th>
-                <th>Actions</th>
+                <th className="cursor-pointer text-sm font-bold" onClick={() => toggleSort('teamName')}>Team Name {sortField === 'teamName' ? (sortDir === 'asc' ? '↑' : '↓') : ''}</th>
+                <th className="cursor-pointer text-sm font-bold" onClick={() => toggleSort('name')}>Assigned Project</th>
+                <th className="text-sm font-bold">Project Lead</th>
+                <th className="text-sm font-bold">Student Interns</th>
+                <th className="cursor-pointer text-sm font-bold" onClick={() => toggleSort('status')}>Status {sortField === 'status' ? (sortDir === 'asc' ? '↑' : '↓') : ''}</th>
+                <th className="cursor-pointer text-sm font-bold" onClick={() => toggleSort('priority')}>Priority {sortField === 'priority' ? (sortDir === 'asc' ? '↑' : '↓') : ''}</th>
+                <th className="text-sm font-bold">Progress</th>
+                <th className="cursor-pointer text-sm font-bold" onClick={() => toggleSort('startDate')}>Start</th>
+                <th className="cursor-pointer text-sm font-bold" onClick={() => toggleSort('endDate')}>End</th>
+                <th className="text-sm font-bold">Actions</th>
               </tr>
             </thead>
             <tbody>
               {paginated.length === 0 ? (
-                <tr><td colSpan={9} className="text-center py-12 text-gray-400">No projects found</td></tr>
+                <tr><td colSpan={10} className="text-center py-12 text-gray-400 text-base">No teams found</td></tr>
               ) : (
                 paginated.map((p) => {
                   const managerId = p.manager || p.manager_id;
                   const startDate = p.startDate || p.start_date;
                   const endDate = p.endDate || p.end_date;
                   const teamMembers = Array.isArray(p.team) ? p.team : [];
+                  const teamTitle = p.teamName || `Team ${p.name.split(' ')[0]}`;
 
                   return (
-                    <tr key={p.id}>
+                    <tr key={p.id} className="hover:bg-blue-50/50 transition-colors">
                       <td>
-                        <Link to={`/admin/projects/${p.id}`} className="text-blue-600 hover:underline font-medium">
-                          {p.name.length > 40 ? p.name.slice(0, 40) + '...' : p.name}
+                        <Link to={`/admin/projects/${p.id}`} className="text-blue-700 hover:text-blue-900 font-bold text-base hover:underline block">
+                          {teamTitle}
                         </Link>
-                        <p className="text-xs text-gray-400 mt-0.5">{p.category}</p>
                       </td>
-                      <td className="text-xs">{workerMap[managerId]?.name || managerId || '—'}</td>
-                      <td className="text-xs text-gray-500">{teamMembers.length} members</td>
+                      <td>
+                        <Link to={`/admin/projects/${p.id}`} className="text-gray-900 hover:text-blue-600 font-medium text-sm block">
+                          {p.name.length > 35 ? p.name.slice(0, 35) + '...' : p.name}
+                        </Link>
+                        <p className="text-xs text-gray-500 mt-0.5">{p.category}</p>
+                      </td>
+                      <td className="text-sm text-gray-700 font-medium">{workerMap[managerId]?.name || managerId || '—'}</td>
+                      <td className="text-sm text-gray-600">{teamMembers.length} Student Interns</td>
                       <td><StatusBadge type="project" value={p.status} /></td>
                       <td><StatusBadge type="priority" value={p.priority} /></td>
                       <td>
-                        <div className="flex items-center gap-2 min-w-[80px]">
+                        <div className="flex items-center gap-2 min-w-[100px]">
                           <ProgressBar value={p.progress || 0} className="flex-1" />
-                          <span className="text-xs text-gray-500 w-8">{p.progress || 0}%</span>
+                          <span className="text-xs font-semibold text-gray-600 w-9">{p.progress || 0}%</span>
                         </div>
                       </td>
                       <td className="text-xs text-gray-500 whitespace-nowrap">{formatDate(startDate)}</td>
                       <td className="text-xs text-gray-500 whitespace-nowrap">{formatDate(endDate)}</td>
                       <td>
                         <div className="flex items-center gap-1">
-                          <button onClick={() => navigate(`/admin/projects/${p.id}`)} className="btn btn-ghost btn-sm text-gray-500 hover:text-blue-600" title="View">
-                            <Eye className="w-3.5 h-3.5" />
+                          <button onClick={() => navigate(`/admin/projects/${p.id}`)} className="btn btn-ghost btn-sm text-gray-600 hover:text-blue-600" title="View Team & Project Details">
+                            <Eye className="w-4 h-4" />
                           </button>
-                          <button onClick={() => toast.success('Edit functionality coming soon')} className="btn btn-ghost btn-sm text-gray-500 hover:text-amber-600" title="Edit">
-                            <Edit2 className="w-3.5 h-3.5" />
+                          <button onClick={() => toast.success('Edit functionality coming soon')} className="btn btn-ghost btn-sm text-gray-600 hover:text-amber-600" title="Edit">
+                            <Edit2 className="w-4 h-4" />
                           </button>
-                          <button onClick={() => setDeleteTarget(p.id)} className="btn btn-ghost btn-sm text-gray-500 hover:text-red-600" title="Delete">
-                            <Trash2 className="w-3.5 h-3.5" />
+                          <button onClick={() => setDeleteTarget(p.id)} className="btn btn-ghost btn-sm text-gray-600 hover:text-red-600" title="Delete">
+                            <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
                       </td>
@@ -252,8 +259,8 @@ const AdminProjects = () => {
       <AddProjectModal open={showAddModal} onClose={() => setShowAddModal(false)} onSubmit={handleAdd} />
       <ConfirmModal
         open={!!deleteTarget}
-        title="Delete Project"
-        message="Are you sure you want to delete this project? This action cannot be undone."
+        title="Delete Team"
+        message="Are you sure you want to delete this team? This action cannot be undone."
         onConfirm={handleDelete}
         onCancel={() => setDeleteTarget(null)}
         danger

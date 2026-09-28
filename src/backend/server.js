@@ -15,6 +15,7 @@ import documentRoutes from "./routes/documentRoutes.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
 import profileRoutes from "./routes/profileRoutes.js";
 import attendanceRoutes from "./routes/attendanceRoutes.js";
+import certificateRoutes from "./routes/certificateRoutes.js";
 
 dotenv.config();
 
@@ -79,6 +80,7 @@ app.use("/api/documents", documentRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/profiles", profileRoutes);
 app.use("/api/attendance", attendanceRoutes);
+app.use("/api/certificates", certificateRoutes);
 app.use("/api/github", githubRoutes);
 app.use("/api/executions", executionRoutes);
 

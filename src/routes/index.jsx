@@ -14,8 +14,6 @@ import LoginPage from '../pages/auth/LoginPage';
 import AdminDashboard from '../pages/admin/Dashboard';
 import AdminProjects from '../pages/admin/Projects';
 import AdminProjectDetail from '../pages/admin/ProjectDetail';
-import AdminTasks from '../pages/admin/Tasks';
-import AdminTaskDetail from '../pages/admin/TaskDetail';
 import AdminWorkers from '../pages/admin/Workers';
 import AdminWorkerDetail from '../pages/admin/WorkerDetail';
 import AdminGitHub from '../pages/admin/GitHub';
@@ -24,6 +22,7 @@ import AdminExecutionDetail from '../pages/admin/ExecutionDetail';
 import AdminMeetings from '../pages/admin/Meetings';
 import AdminDocuments from '../pages/admin/Documents';
 import AdminReports from '../pages/admin/Reports';
+import AdminCertificates from '../pages/admin/Certificates';
 import AdminNotifications from '../pages/admin/Notifications';
 import AdminSettings from '../pages/admin/Settings';
 import AdminProfile from '../pages/admin/Profile';
@@ -36,16 +35,18 @@ import CandidateAttendanceSummary from '../pages/admin/attendance/CandidateAtten
 import WorkerDashboard from '../pages/worker/Dashboard';
 import WorkerProjects from '../pages/worker/Projects';
 import WorkerProjectDetail from '../pages/worker/ProjectDetail';
-import WorkerTasks from '../pages/worker/Tasks';
-import WorkerTaskDetail from '../pages/worker/TaskDetail';
 import WorkerSubmissions from '../pages/worker/Submissions';
 import WorkerGitHub from '../pages/worker/GitHub';
 import WorkerExecutions from '../pages/worker/Executions';
 import WorkerExecutionDetail from '../pages/worker/ExecutionDetail';
 import WorkerMeetings from '../pages/worker/Meetings';
 import WorkerDocuments from '../pages/worker/Documents';
+import WorkerCertificates from '../pages/worker/WorkerCertificates';
 import WorkerNotifications from '../pages/worker/Notifications';
 import WorkerProfile from '../pages/worker/Profile';
+
+// Public Verification Page
+import VerifyCertificate from '../pages/public/VerifyCertificate';
 
 // Route guards
 const RequireAuth = ({ children, role }) => {
@@ -102,8 +103,6 @@ const AppRoutes = () => {
         <Route path="dashboard" element={<AdminDashboard />} />
         <Route path="projects" element={<AdminProjects />} />
         <Route path="projects/:id" element={<AdminProjectDetail />} />
-        <Route path="tasks" element={<AdminTasks />} />
-        <Route path="tasks/:id" element={<AdminTaskDetail />} />
         <Route path="workers" element={<AdminWorkers />} />
         <Route path="workers/:id" element={<AdminWorkerDetail />} />
         <Route path="attendance" element={<AttendanceDashboard />} />
@@ -116,6 +115,7 @@ const AppRoutes = () => {
         <Route path="meetings" element={<AdminMeetings />} />
         <Route path="documents" element={<AdminDocuments />} />
         <Route path="reports" element={<AdminReports />} />
+        <Route path="certificates" element={<AdminCertificates />} />
         <Route path="notifications" element={<AdminNotifications />} />
         <Route path="settings" element={<AdminSettings />} />
         <Route path="profile" element={<AdminProfile />} />
@@ -134,17 +134,19 @@ const AppRoutes = () => {
         <Route path="dashboard" element={<WorkerDashboard />} />
         <Route path="projects" element={<WorkerProjects />} />
         <Route path="projects/:id" element={<WorkerProjectDetail />} />
-        <Route path="tasks" element={<WorkerTasks />} />
-        <Route path="tasks/:id" element={<WorkerTaskDetail />} />
         <Route path="submissions" element={<WorkerSubmissions />} />
         <Route path="github" element={<WorkerGitHub />} />
         <Route path="executions" element={<WorkerExecutions />} />
         <Route path="executions/:id" element={<WorkerExecutionDetail />} />
         <Route path="meetings" element={<WorkerMeetings />} />
         <Route path="documents" element={<WorkerDocuments />} />
+        <Route path="certificates" element={<WorkerCertificates />} />
         <Route path="notifications" element={<WorkerNotifications />} />
         <Route path="profile" element={<WorkerProfile />} />
       </Route>
+
+      {/* Public Verification Endpoint */}
+      <Route path="/verify-certificate/:certId" element={<VerifyCertificate />} />
 
       {/* Fallback */}
       <Route path="*" element={<Navigate to="/login" replace />} />

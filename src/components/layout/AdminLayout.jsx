@@ -15,6 +15,7 @@ const PAGE_TITLES = {
   '/admin/meetings': 'Meetings',
   '/admin/documents': 'Documents',
   '/admin/reports': 'Reports',
+  '/admin/certificates': 'Certificates',
   '/admin/notifications': 'Notifications',
   '/admin/settings': 'Settings',
   '/admin/profile': 'Profile',

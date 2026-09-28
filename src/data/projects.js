@@ -3,6 +3,7 @@
 export const PROJECTS = [
   {
     id: 'p-001',
+    teamName: 'Team Alpha',
     name: 'AI Based Medical Image Analysis',
     description: 'Developing deep learning models to analyze medical images including X-rays, MRI scans, and CT scans for automated disease detection and classification.',
     category: 'Artificial Intelligence',
@@ -22,6 +23,7 @@ export const PROJECTS = [
   },
   {
     id: 'p-002',
+    teamName: 'Team Beta',
     name: 'NLP Based Sentiment Analysis for Social Media',
     description: 'Building transformer-based models to analyze sentiment and opinion in social media posts with multilingual support.',
     category: 'Natural Language Processing',
@@ -40,6 +42,7 @@ export const PROJECTS = [
   },
   {
     id: 'p-003',
+    teamName: 'Team Vision',
     name: 'Real-Time Object Detection System',
     description: 'Implementing YOLO-based object detection system for real-time video analysis in surveillance and autonomous driving scenarios.',
     category: 'Computer Vision',
@@ -58,6 +61,7 @@ export const PROJECTS = [
   },
   {
     id: 'p-004',
+    teamName: 'Team DataCore',
     name: 'Big Data Analytics Pipeline',
     description: 'Designing and implementing a scalable big data pipeline using Apache Spark for processing and analyzing large research datasets.',
     category: 'Data Engineering',
@@ -76,6 +80,7 @@ export const PROJECTS = [
   },
   {
     id: 'p-005',
+    teamName: 'Team Genomics',
     name: 'Genomic Data Analysis for Disease Prediction',
     description: 'Analyzing genomic sequences using machine learning to identify genetic markers associated with common diseases.',
     category: 'Bioinformatics',
@@ -94,6 +99,7 @@ export const PROJECTS = [
   },
   {
     id: 'p-006',
+    teamName: 'Team Robotics',
     name: 'Autonomous Navigation Robot',
     description: 'Building an autonomous robot capable of navigating complex environments using LiDAR, computer vision, and reinforcement learning.',
     category: 'Robotics',
@@ -112,6 +118,7 @@ export const PROJECTS = [
   },
   {
     id: 'p-007',
+    teamName: 'Team MARL',
     name: 'Multi-Agent Reinforcement Learning Framework',
     description: 'Developing a framework for training multiple agents to cooperate and compete in complex simulated environments.',
     category: 'Artificial Intelligence',
@@ -130,6 +137,7 @@ export const PROJECTS = [
   },
   {
     id: 'p-008',
+    teamName: 'Team BioTech',
     name: 'Drug Discovery using Molecular ML',
     description: 'Applying graph neural networks and molecular fingerprinting to predict drug-target interactions for accelerated drug discovery.',
     category: 'Bioinformatics',

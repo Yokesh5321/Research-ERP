@@ -3,20 +3,20 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, FolderOpen, CheckSquare, Upload, GitBranch, Terminal,
-  Video, FileText, Bell, LogOut, User, ChevronLeft, ChevronRight, X,
+  Video, FileText, Award, Bell, LogOut, User, ChevronLeft, ChevronRight, X,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { NOTIFICATIONS } from '../../data/notifications';
 
 const NAV_ITEMS = [
   { to: '/worker/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/worker/projects', icon: FolderOpen, label: 'My Projects' },
-  { to: '/worker/tasks', icon: CheckSquare, label: 'My Tasks' },
+  { to: '/worker/projects', icon: FolderOpen, label: 'My Teams' },
   { to: '/worker/submissions', icon: Upload, label: 'Submissions' },
   { to: '/worker/github', icon: GitBranch, label: 'GitHub' },
   { to: '/worker/executions', icon: Terminal, label: 'Code Executions' },
   { to: '/worker/meetings', icon: Video, label: 'Meetings' },
   { to: '/worker/documents', icon: FileText, label: 'Documents' },
+  { to: '/worker/certificates', icon: Award, label: 'My Certificates' },
   { to: '/worker/notifications', icon: Bell, label: 'Notifications' },
 ];
 

@@ -53,52 +53,60 @@ const WorkerProjects = () => {
 
   const filtered = myProjects.filter((p) => !search || p.name.toLowerCase().includes(search.toLowerCase()));
 
-  if (loading) return <LoadingState message="Loading projects..." />;
+  if (loading) return <LoadingState message="Loading teams..." />;
 
   return (
     <div>
-      <PageHeader title="My Projects" subtitle={`${myProjects.length} projects assigned to you`} />
-      <div className="mb-4">
-        <SearchBar value={search} onChange={setSearch} placeholder="Search projects..." className="w-64" />
+      <PageHeader title="My Teams" subtitle={`${myProjects.length} teams assigned to you`} />
+      <div className="mb-5">
+        <SearchBar value={search} onChange={setSearch} placeholder="Search teams or projects..." className="w-72" />
       </div>
 
-      <div className="card">
+      <div className="card shadow-sm">
         <div className="table-container">
           <table className="table">
             <thead>
               <tr>
-                <th>Project</th>
-                <th>Role</th>
-                <th>Status</th>
-                <th>Progress</th>
-                <th>Deadline</th>
-                <th>Actions</th>
+                <th className="text-sm font-bold">Team Name</th>
+                <th className="text-sm font-bold">Assigned Project</th>
+                <th className="text-sm font-bold">My Role</th>
+                <th className="text-sm font-bold">Status</th>
+                <th className="text-sm font-bold">Progress</th>
+                <th className="text-sm font-bold">Deadline</th>
+                <th className="text-sm font-bold">Actions</th>
               </tr>
             </thead>
             <tbody>
               {filtered.length === 0 ? (
-                <tr><td colSpan={6} className="text-center py-12 text-gray-400">{search ? 'No projects found' : 'No projects assigned'}</td></tr>
+                <tr><td colSpan={7} className="text-center py-12 text-gray-400 text-base">{search ? 'No teams found' : 'No teams assigned'}</td></tr>
               ) : (
                 filtered.map((p) => {
                   const mgr = p.manager || p.manager_id;
                   const endDate = p.endDate || p.end_date;
+                  const teamTitle = p.teamName || `Team ${p.name.split(' ')[0]}`;
+
                   return (
-                    <tr key={p.id}>
+                    <tr key={p.id} className="hover:bg-blue-50/50 transition-colors">
                       <td>
-                        <p className="text-xs font-medium text-gray-800">{p.name}</p>
-                        <p className="text-xs text-gray-400">{p.category}</p>
+                        <Link to={`/worker/projects/${p.id}`} className="text-blue-700 hover:text-blue-900 font-bold text-base hover:underline block">
+                          {teamTitle}
+                        </Link>
                       </td>
-                      <td className="text-xs text-gray-500">{mgr === userId ? 'Project Manager' : 'Team Member'}</td>
+                      <td>
+                        <p className="text-sm font-medium text-gray-900">{p.name}</p>
+                        <p className="text-xs text-gray-500 mt-0.5">{p.category}</p>
+                      </td>
+                      <td className="text-sm text-gray-600 font-medium">{mgr === userId ? 'Team Lead' : 'Student Intern'}</td>
                       <td><StatusBadge type="project" value={p.status} /></td>
                       <td>
-                        <div className="flex items-center gap-2 min-w-[80px]">
+                        <div className="flex items-center gap-2 min-w-[100px]">
                           <ProgressBar value={p.progress || 0} className="flex-1" />
-                          <span className="text-xs text-gray-500">{p.progress || 0}%</span>
+                          <span className="text-xs font-semibold text-gray-600 w-9">{p.progress || 0}%</span>
                         </div>
                       </td>
-                      <td className="text-xs text-gray-500">{formatDate(endDate)}</td>
+                      <td className="text-xs text-gray-500 whitespace-nowrap">{formatDate(endDate)}</td>
                       <td>
-                        <Link to={`/worker/projects/${p.id}`} className="btn btn-secondary btn-sm">View</Link>
+                        <Link to={`/worker/projects/${p.id}`} className="btn btn-secondary btn-sm text-sm font-semibold">View Details</Link>
                       </td>
                     </tr>
                   );
