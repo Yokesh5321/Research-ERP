@@ -3,14 +3,16 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "scripts": {
-    "dev": "vite",
-    "dev:all": "concurrently \"npm run server:dev\" \"npm run dev\"",
-    "build": "vite build",
-    "lint": "oxlint",
-    "preview": "vite preview",
-    "server": "node src/backend/server.js"
-  },
+"scripts": {
+  "dev": "vite",
+  "build": "vite build",
+  "lint": "oxlint",
+  "preview": "vite preview",
+  "server": "node src/backend/server.js",
+  "start": "node src/backend/server.js",
+  "server:dev": "nodemon src/backend/server.js",
+  "dev:all": "concurrently \"npm run server:dev\" \"npm run dev\""
+},
   "dependencies": {
     "@supabase/supabase-js": "^2.115.0",
     "cors": "^2.8.6",
@@ -23,25 +25,31 @@
     "react-router-dom": "^7.18.3",
     "recharts": "^3.10.1"
   },
-  "devDependencies": {
-    "@tailwindcss/vite": "^4.3.3",
-    "@types/react": "^19.2.18",
-    "@types/react-dom": "^19.2.4",
-    "@vitejs/plugin-react": "^6.1.0",
-    "concurrently": "^9.1.2",
-    "nodemon": "^1.14.10",
-    "oxlint": "^1.79.0",
-    "tailwindcss": "^4.3.3",
-    "vite": "^8.2.2"
-  },
-  "description": "This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.",
+"devDependencies": {
+  "@tailwindcss/vite": "^4.3.3",
+  "@types/react": "^19.2.18",
+  "@types/react-dom": "^19.2.4",
+  "@vitejs/plugin-react": "^6.1.0",
+  "concurrently": "^9.2.1",
+  "nodemon": "^3.1.10",
+  "oxlint": "^1.79.0",
+  "tailwindcss": "^4.3.3",
+  "vite": "^8.2.2"
+},
+  "description": "Research ERP system built with React, Vite, Node.js, Express and Supabase.",
   "main": "vite.config.js",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Yokesh5321/Research-ERP.git"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "erp",
+    "research",
+    "react",
+    "vite",
+    "supabase"
+  ],
+  "author": "Yokesh Kumar",
   "license": "ISC",
   "bugs": {
     "url": "https://github.com/Yokesh5321/Research-ERP/issues"
