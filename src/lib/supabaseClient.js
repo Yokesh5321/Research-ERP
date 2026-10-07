@@ -1,17 +1,15 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://nsunkgfvlgxvdjxfioth.supabase.co';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_GB4BqS3Qgk6VglbrIB5QXw_DbESoRVG';
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-if (!supabaseAnonKey || supabaseAnonKey === 'YOUR_SUPABASE_ANON_KEY') {
-  console.warn(
-    '[Supabase] Warning: VITE_SUPABASE_ANON_KEY is not set in .env. Please update your .env with your real Supabase Anon Key.'
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.error(
+    '[Supabase Frontend] VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY must be set in your .env file.\n' +
+    'Copy .env.example to .env and fill in your Supabase project credentials.'
   );
 }
 
-export const supabase = createClient(
-  supabaseUrl,
-  supabaseAnonKey
-);
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export default supabase;

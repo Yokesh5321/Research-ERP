@@ -1,27 +1,33 @@
 import { Router } from "express";
 import supabase from "../config/supabase.js";
-import { EXECUTIONS } from "../../data/executions.js";
 
 const router = Router();
 
 /**
  * POST /api/executions/run
- * Code Execution Engine (Sandbox / Testing)
- * Orchestrates running submitted code, installing dependencies, executing test suites, and collecting results
+ * Code Execution Sandbox Engine
+ * Runs submitted code in a simulated sandbox, evaluates results, and persists to Supabase.
  */
 router.post("/run", async (req, res) => {
   const {
-    taskId = "t-001",
-    studentId = "w-001",
-    projectId = "p-001",
+    taskId,
+    studentId,
+    projectId,
     code = "",
-    commitHash = "e4f8a2c",
+    commitHash = "unknown",
     commitMessage = "Submit implementation for verification",
   } = req.body;
 
+  if (!taskId || !studentId || !projectId) {
+    return res.status(400).json({
+      success: false,
+      error: "taskId, studentId, and projectId are required",
+    });
+  }
+
   const startTime = new Date();
 
-  // Test Suite Definition for Sandbox Evaluation
+  // Sandbox test suite definition
   const testDefinitions = [
     { name: "Syntax and structure validation", duration: "0.12s" },
     { name: "Package dependency resolution", duration: "1.45s" },
@@ -31,7 +37,7 @@ router.post("/run", async (req, res) => {
     { name: "Output schema validation & artifact generation", duration: "0.32s" },
   ];
 
-  // Evaluate code: Check for basic error indicators in simulated run
+  // Basic code evaluation
   const hasSyntaxError = code.includes("throw new Error") || code.includes("SYNTAX_ERROR");
   const testsPassed = hasSyntaxError ? 2 : testDefinitions.length;
   const testsFailed = testDefinitions.length - testsPassed;
@@ -44,29 +50,25 @@ router.post("/run", async (req, res) => {
   }));
 
   const endTime = new Date(startTime.getTime() + 5290);
-  const executionTime = "5.29s";
 
   const consoleOutput = `[Sandbox Engine] Initializing container environment...
 [Sandbox Engine] OS: Linux 6.1.0-x86_64 | Node/Python Runtime: Active
 [Sandbox Engine] Installing dependencies from requirements...
   ✓ Dependencies installed cleanly (0 vulnerabilities)
 [Sandbox Engine] Running verification test suite...
-${testCases
-  .map((t) => `  ${t.status === "passed" ? "✓" : "✗"} ${t.name} (${t.duration})`)
-  .join("\n")}
+${testCases.map((t) => `  ${t.status === "passed" ? "✓" : "✗"} ${t.name} (${t.duration})`).join("\n")}
 [Sandbox Engine] Test run completed. Total: ${testDefinitions.length}, Passed: ${testsPassed}, Failed: ${testsFailed}.
 ${status === "passed" ? "✓ ALL CHECKS PASSED. Ready for evaluation." : "✗ VERIFICATION FAILED. Review errors."}
 `;
 
   const executionRecord = {
-    id: `ex-${Date.now().toString().slice(-6)}`,
     submission_id: `SUB-${new Date().getFullYear()}-${Math.floor(100 + Math.random() * 900)}`,
     student_id: studentId,
     project_id: projectId,
     task_id: taskId,
     commit_hash: commitHash,
     commit_message: commitMessage,
-    execution_time: executionTime,
+    execution_time: "5.29s",
     start_time: startTime.toISOString(),
     end_time: endTime.toISOString(),
     status,
@@ -81,33 +83,44 @@ ${status === "passed" ? "✓ ALL CHECKS PASSED. Ready for evaluation." : "✗ VE
   };
 
   try {
-    // Persist execution result in Supabase
-    await supabase.from("executions").insert([executionRecord]);
+    // Persist execution result in Supabase (let DB generate the UUID)
+    const { data: inserted, error: insertError } = await supabase
+      .from("executions")
+      .insert([executionRecord])
+      .select()
+      .maybeSingle();
 
-    // Automatically update task status in Supabase if task exists
+    if (insertError) {
+      console.error("[Execution API] Failed to persist execution:", insertError.message);
+      return res.status(500).json({ success: false, error: "Failed to save execution result" });
+    }
+
+    // Update task status based on execution result
     await supabase
       .from("tasks")
       .update({
         status: status === "passed" ? "completed" : "failed",
         progress: status === "passed" ? 100 : 50,
         submitted_at: new Date().toISOString(),
-        execution_id: executionRecord.id,
+        execution_id: inserted?.id || null,
+        updated_at: new Date().toISOString(),
       })
       .eq("id", taskId);
-  } catch (err) {
-    console.warn("Supabase persistence note for execution:", err.message);
-  }
 
-  return res.status(200).json({
-    success: true,
-    message: `Code execution engine finished with status: ${status}`,
-    data: executionRecord,
-  });
+    return res.status(200).json({
+      success: true,
+      message: `Code execution completed with status: ${status}`,
+      data: inserted || executionRecord,
+    });
+  } catch (err) {
+    console.error("[Execution API] Error:", err.message);
+    return res.status(500).json({ success: false, error: "Execution engine error" });
+  }
 });
 
 /**
  * GET /api/executions
- * List all code execution records
+ * List all code execution records from Supabase
  */
 router.get("/", async (req, res) => {
   try {
@@ -116,13 +129,14 @@ router.get("/", async (req, res) => {
       .select("*")
       .order("created_at", { ascending: false });
 
-    if (error || !data || data.length === 0) {
-      return res.json({ success: true, count: EXECUTIONS.length, data: EXECUTIONS, source: "seed" });
+    if (error) {
+      console.error("[Execution API] Supabase error:", error.message);
+      return res.status(500).json({ success: false, error: "Failed to fetch executions" });
     }
 
-    return res.json({ success: true, count: data.length, data, source: "supabase" });
+    return res.json({ success: true, count: (data || []).length, data: data || [] });
   } catch (err) {
-    return res.json({ success: true, count: EXECUTIONS.length, data: EXECUTIONS, source: "fallback" });
+    return res.status(500).json({ success: false, error: "Server error fetching executions" });
   }
 });
 
@@ -133,17 +147,21 @@ router.get("/", async (req, res) => {
 router.get("/:id", async (req, res) => {
   const { id } = req.params;
   try {
-    const { data } = await supabase.from("executions").select("*").eq("id", id).maybeSingle();
-    if (data) {
-      return res.json({ success: true, data });
+    const { data, error } = await supabase
+      .from("executions")
+      .select("*")
+      .eq("id", id)
+      .maybeSingle();
+
+    if (error) {
+      return res.status(500).json({ success: false, error: "Failed to fetch execution" });
     }
 
-    const fallback = EXECUTIONS.find((e) => e.id === id);
-    if (fallback) {
-      return res.json({ success: true, data: fallback });
+    if (!data) {
+      return res.status(404).json({ success: false, error: "Execution record not found" });
     }
 
-    return res.status(404).json({ success: false, error: "Execution run not found" });
+    return res.json({ success: true, data });
   } catch (err) {
     return res.status(500).json({ success: false, error: "Error fetching execution detail" });
   }

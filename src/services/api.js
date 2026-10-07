@@ -1,21 +1,37 @@
 /**
- * Research ERP - Comprehensive API Service Client
- * Connects frontend React client to Node.js/Express backend API (/api)
+ * Research ERP — Frontend API Service Client
+ * Connects the React frontend to the Node.js/Express backend API.
+ *
+ * HOW THE BASE URL IS RESOLVED:
+ *   Development:  VITE_API_URL is empty → Vite dev server proxies /api → http://localhost:5000
+ *   Production:   VITE_API_URL = "https://your-backend.onrender.com" → requests go to that URL
+ *
+ * Set VITE_API_URL in your .env (frontend environment) for production.
  */
 
-const BASE_URL = '/api';
+import { supabase } from '../lib/supabaseClient';
+
+// In production, VITE_API_URL points to the deployed backend.
+// In development, leave it empty — Vite proxy handles /api → localhost:5000.
+const API_BASE = import.meta.env.VITE_API_URL
+  ? `${import.meta.env.VITE_API_URL}/api`
+  : '/api';
+
+/**
+ * Get the current Supabase session token.
+ * Uses supabase.auth.getSession() — works regardless of the project URL or localStorage key name.
+ */
+const getAuthToken = async () => {
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    return session?.access_token || null;
+  } catch {
+    return null;
+  }
+};
 
 const request = async (endpoint, options = {}) => {
-  let token = null;
-  try {
-    const rawSession = localStorage.getItem('sb-nsunkgfvlgxvdjxfioth-auth-token');
-    if (rawSession) {
-      const parsed = JSON.parse(rawSession);
-      token = parsed?.access_token;
-    }
-  } catch (e) {
-    // Ignore storage parse error
-  }
+  const token = await getAuthToken();
 
   const headers = {
     'Content-Type': 'application/json',
@@ -24,7 +40,7 @@ const request = async (endpoint, options = {}) => {
   };
 
   try {
-    const response = await fetch(`${BASE_URL}${endpoint}`, {
+    const response = await fetch(`${API_BASE}${endpoint}`, {
       ...options,
       headers,
     });
@@ -64,6 +80,7 @@ export const api = {
     },
     getById: (id) => request(`/projects/${id}`),
     create: (project) => request('/projects', { method: 'POST', body: JSON.stringify(project) }),
+    update: (id, updates) => request(`/projects/${id}`, { method: 'PUT', body: JSON.stringify(updates) }),
     delete: (id) => request(`/projects/${id}`, { method: 'DELETE' }),
   },
 
@@ -128,7 +145,7 @@ export const api = {
     getCommits: () => request('/github/commits'),
   },
 
-  // Code Execution Engine (Sandbox / Testing)
+  // Code Execution Engine (Sandbox)
   executions: {
     run: (payload) =>
       request('/executions/run', {

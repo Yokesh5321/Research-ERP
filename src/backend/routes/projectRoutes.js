@@ -1,15 +1,10 @@
 import { Router } from "express";
 import supabase from "../config/supabase.js";
-import { PROJECTS } from "../../data/projects.js";
 
 const router = Router();
 
-// In-memory runtime store for projects initialized with seed data
-let inMemoryProjects = [...PROJECTS];
-
 const normalizeProject = (p) => {
   if (!p) return null;
-  const mgr = p.manager || p.manager_id || "w-001";
   const sDate = p.startDate || p.start_date || new Date().toISOString().split("T")[0];
   const eDate = p.endDate || p.end_date || null;
   const repo = p.githubRepo || p.github_repo || "";
@@ -27,8 +22,7 @@ const normalizeProject = (p) => {
     priority: p.priority || "medium",
     status: p.status || "planning",
     progress: p.progress || 0,
-    manager: mgr,
-    manager_id: mgr,
+    manager_id: p.manager_id || p.manager || null,
     startDate: sDate,
     start_date: sDate,
     endDate: eDate,
@@ -55,74 +49,63 @@ router.get("/", async (req, res) => {
   try {
     const { status, category, search } = req.query;
 
-    let dbData = null;
-    try {
-      let query = supabase.from("projects").select("*");
-      if (status) query = query.eq("status", status);
-      if (category) query = query.eq("category", category);
-      if (search) query = query.ilike("name", `%${search}%`);
+    let query = supabase.from("projects").select("*");
+    if (status) query = query.eq("status", status);
+    if (category) query = query.eq("category", category);
+    if (search) query = query.ilike("name", `%${search}%`);
 
-      const { data, error } = await query.order("created_at", { ascending: false });
-      if (!error && data && data.length > 0) {
-        dbData = data;
-      }
-    } catch (sbErr) {
-      console.warn("[Project API] Supabase query warning:", sbErr.message);
+    const { data, error } = await query.order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("[Project API] Supabase error:", error.message);
+      return res.status(500).json({ success: false, error: "Failed to fetch projects from database" });
     }
 
-    let list = inMemoryProjects.map(normalizeProject);
-    if (dbData) {
-      const dbIds = new Set(dbData.map((d) => d.id));
-      list = [...dbData.map(normalizeProject), ...list.filter((p) => !dbIds.has(p.id))];
-    }
-
-    if (status) list = list.filter((p) => p.status === status);
-    if (category) list = list.filter((p) => p.category === category);
-    if (search) list = list.filter((p) => p.name.toLowerCase().includes(search.toLowerCase()));
-
+    const list = (data || []).map(normalizeProject);
     return res.json({ success: true, count: list.length, data: list });
   } catch (err) {
     console.error("Fetch projects error:", err);
-    return res.json({ success: true, count: inMemoryProjects.length, data: inMemoryProjects.map(normalizeProject) });
+    return res.status(500).json({ success: false, error: "Server error while fetching projects" });
   }
 });
 
 /**
  * GET /api/projects/:id
- * Retrieve a single project
+ * Retrieve a single project with its tasks
  */
 router.get("/:id", async (req, res) => {
   const { id } = req.params;
   try {
-    let dbProject = null;
-    let dbTasks = [];
+    const { data: project, error: projectError } = await supabase
+      .from("projects")
+      .select("*")
+      .eq("id", id)
+      .maybeSingle();
 
-    try {
-      const { data: project } = await supabase.from("projects").select("*").eq("id", id).maybeSingle();
-      const { data: tasks } = await supabase.from("tasks").select("*").eq("project_id", id);
-      if (project) {
-        dbProject = project;
-        dbTasks = tasks || [];
-      }
-    } catch (e) {}
+    if (projectError) {
+      console.error("[Project API] Supabase error:", projectError.message);
+      return res.status(500).json({ success: false, error: "Failed to fetch project" });
+    }
 
-    const memoryProject = inMemoryProjects.find((p) => p.id === id);
-    const target = dbProject ? { ...dbProject, tasks: dbTasks } : memoryProject;
-
-    if (!target) {
+    if (!project) {
       return res.status(404).json({ success: false, error: "Project not found" });
     }
 
-    return res.json({ success: true, data: normalizeProject(target) });
+    const { data: tasks } = await supabase.from("tasks").select("*").eq("project_id", id);
+
+    return res.json({
+      success: true,
+      data: normalizeProject({ ...project, tasks: tasks || [] }),
+    });
   } catch (err) {
     console.error("Fetch project detail error:", err);
-    return res.status(500).json({ success: false, error: "Error fetching project detail" });
+    return res.status(500).json({ success: false, error: "Server error while fetching project" });
   }
 });
 
 /**
  * POST /api/projects
- * Create a new research project
+ * Create a new research project — persisted to Supabase only
  */
 router.post("/", async (req, res) => {
   try {
@@ -144,66 +127,41 @@ router.post("/", async (req, res) => {
       return res.status(400).json({ success: false, error: "Project name is required" });
     }
 
-    const mgr = manager || managerId || "w-001";
     const sDate = startDate || new Date().toISOString().split("T")[0];
-    const eDate = endDate || null;
 
-    const newProject = normalizeProject({
-      id: `p-${Date.now().toString().slice(-6)}`,
+    const newProject = {
       name,
       description: description || "",
       category: category || "Artificial Intelligence",
       priority,
       status: status || "planning",
       progress: 0,
-      startDate: sDate,
       start_date: sDate,
-      endDate: eDate,
-      end_date: eDate,
-      manager: mgr,
-      manager_id: mgr,
+      end_date: endDate || null,
+      manager_id: managerId || manager || null,
       team: Array.isArray(team) ? team : [],
-      githubRepo: githubRepo || "",
       github_repo: githubRepo || "",
-      totalTasks: 0,
       total_tasks: 0,
-      completedTasks: 0,
       completed_tasks: 0,
-      createdAt: new Date().toISOString(),
       created_at: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
       updated_at: new Date().toISOString(),
-    });
+    };
 
-    // 1. Add to in-memory store
-    inMemoryProjects.unshift(newProject);
+    const { data, error } = await supabase
+      .from("projects")
+      .insert([newProject])
+      .select()
+      .maybeSingle();
 
-    // 2. Try inserting into Supabase
-    try {
-      await supabase.from("projects").insert([{
-        id: newProject.id,
-        name: newProject.name,
-        description: newProject.description,
-        category: newProject.category,
-        priority: newProject.priority,
-        status: newProject.status,
-        progress: newProject.progress,
-        start_date: newProject.start_date,
-        end_date: newProject.end_date,
-        manager_id: newProject.manager_id,
-        team: newProject.team,
-        github_repo: newProject.github_repo,
-        total_tasks: 0,
-        completed_tasks: 0,
-      }]);
-    } catch (sbErr) {
-      console.warn("[Project API] Supabase insert warning:", sbErr.message);
+    if (error) {
+      console.error("[Project API] Insert error:", error.message);
+      return res.status(500).json({ success: false, error: "Failed to create project: " + error.message });
     }
 
     return res.status(201).json({
       success: true,
       message: "Project created successfully",
-      data: newProject,
+      data: normalizeProject(data),
     });
   } catch (err) {
     console.error("Create project error:", err);
@@ -212,18 +170,48 @@ router.post("/", async (req, res) => {
 });
 
 /**
+ * PUT /api/projects/:id
+ * Update a project
+ */
+router.put("/:id", async (req, res) => {
+  const { id } = req.params;
+  try {
+    const updates = { ...req.body, updated_at: new Date().toISOString() };
+    const { data, error } = await supabase
+      .from("projects")
+      .update(updates)
+      .eq("id", id)
+      .select()
+      .maybeSingle();
+
+    if (error) {
+      return res.status(500).json({ success: false, error: "Failed to update project: " + error.message });
+    }
+
+    return res.json({
+      success: true,
+      message: "Project updated successfully",
+      data: normalizeProject(data),
+    });
+  } catch (err) {
+    console.error("Update project error:", err);
+    return res.status(500).json({ success: false, error: "Failed to update project" });
+  }
+});
+
+/**
  * DELETE /api/projects/:id
- * Delete a project
+ * Delete a project (cascades to tasks)
  */
 router.delete("/:id", async (req, res) => {
   const { id } = req.params;
   try {
-    inMemoryProjects = inMemoryProjects.filter((p) => p.id !== id);
-    try {
-      await supabase.from("projects").delete().eq("id", id);
-    } catch (sbErr) {
-      console.warn("[Project API] Supabase delete warning:", sbErr.message);
+    const { error } = await supabase.from("projects").delete().eq("id", id);
+
+    if (error) {
+      return res.status(500).json({ success: false, error: "Failed to delete project: " + error.message });
     }
+
     return res.json({ success: true, message: "Project deleted successfully" });
   } catch (err) {
     console.error("Delete project error:", err);

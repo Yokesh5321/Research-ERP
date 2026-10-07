@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: research-erp-backend
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node src/backend/server.js
+    rootDir: .
+    healthCheckPath: /
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: SUPABASE_URL
+        sync: false   # Set this in Render dashboard — do not hardcode
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false   # Set this in Render dashboard — keep secret!
+      - key: FRONTEND_URL
+        sync: false   # Set to your Vercel/Netlify frontend URL
+      - key: GITHUB_WEBHOOK_SECRET
+        sync: false   # Set to your GitHub webhook secret

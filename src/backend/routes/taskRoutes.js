@@ -1,6 +1,5 @@
 import { Router } from "express";
 import supabase from "../config/supabase.js";
-import { TASKS } from "../../data/tasks.js";
 
 const router = Router();
 
@@ -20,18 +19,15 @@ router.get("/", async (req, res) => {
 
     const { data, error } = await query.order("due_date", { ascending: true });
 
-    if (error || !data || data.length === 0) {
-      let list = TASKS;
-      if (projectId) list = list.filter((t) => t.project === projectId || t.project_id === projectId);
-      if (assignedTo) list = list.filter((t) => t.assignedTo === assignedTo || t.assigned_to === assignedTo);
-      if (status) list = list.filter((t) => t.status === status);
-      return res.json({ success: true, count: list.length, data: list, source: "seed" });
+    if (error) {
+      console.error("[Task API] Supabase error:", error.message);
+      return res.status(500).json({ success: false, error: "Failed to fetch tasks from database" });
     }
 
-    return res.json({ success: true, count: data.length, data, source: "supabase" });
+    return res.json({ success: true, count: (data || []).length, data: data || [] });
   } catch (err) {
     console.error("Fetch tasks error:", err);
-    return res.json({ success: true, count: TASKS.length, data: TASKS, source: "fallback" });
+    return res.status(500).json({ success: false, error: "Server error while fetching tasks" });
   }
 });
 
@@ -42,17 +38,21 @@ router.get("/", async (req, res) => {
 router.get("/:id", async (req, res) => {
   const { id } = req.params;
   try {
-    const { data: task } = await supabase.from("tasks").select("*").eq("id", id).maybeSingle();
-    if (task) {
-      return res.json({ success: true, data: task });
+    const { data: task, error } = await supabase
+      .from("tasks")
+      .select("*")
+      .eq("id", id)
+      .maybeSingle();
+
+    if (error) {
+      return res.status(500).json({ success: false, error: "Failed to fetch task" });
     }
 
-    const fallbackTask = TASKS.find((t) => t.id === id);
-    if (!fallbackTask) {
+    if (!task) {
       return res.status(404).json({ success: false, error: "Task not found" });
     }
 
-    return res.json({ success: true, data: fallbackTask });
+    return res.json({ success: true, data: task });
   } catch (err) {
     console.error("Fetch task detail error:", err);
     return res.status(500).json({ success: false, error: "Failed to fetch task" });
@@ -61,36 +61,64 @@ router.get("/:id", async (req, res) => {
 
 /**
  * POST /api/tasks
- * Create a new task
+ * Create a new task — persisted to Supabase only
  */
 router.post("/", async (req, res) => {
   try {
-    const { title, description, projectId, assignedTo, priority = "medium", dueDate } = req.body;
+    const {
+      title,
+      description,
+      projectId,
+      project_id,
+      assignedTo,
+      assigned_to,
+      priority = "medium",
+      dueDate,
+      due_date,
+      githubRepo,
+      github_repo,
+      githubBranch,
+      github_branch,
+      expectedOutput,
+      expected_output,
+    } = req.body;
 
-    if (!title || !projectId) {
+    const resolvedProjectId = projectId || project_id;
+    if (!title || !resolvedProjectId) {
       return res.status(400).json({ success: false, error: "Task title and project are required" });
     }
 
     const newTask = {
-      id: `t-${Date.now().toString().slice(-4)}`,
       title,
       description: description || "",
-      project_id: projectId,
-      assigned_to: assignedTo || null,
+      project_id: resolvedProjectId,
+      assigned_to: assignedTo || assigned_to || null,
       priority,
       status: "not_started",
       progress: 0,
-      due_date: dueDate || null,
+      due_date: dueDate || due_date || null,
+      github_repo: githubRepo || github_repo || null,
+      github_branch: githubBranch || github_branch || null,
+      expected_output: expectedOutput || expected_output || null,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
 
-    const { data } = await supabase.from("tasks").insert([newTask]).select().maybeSingle();
+    const { data, error } = await supabase
+      .from("tasks")
+      .insert([newTask])
+      .select()
+      .maybeSingle();
+
+    if (error) {
+      console.error("[Task API] Insert error:", error.message);
+      return res.status(500).json({ success: false, error: "Failed to create task: " + error.message });
+    }
 
     return res.status(201).json({
       success: true,
       message: "Task created successfully",
-      data: data || newTask,
+      data,
     });
   } catch (err) {
     console.error("Create task error:", err);
@@ -100,7 +128,7 @@ router.post("/", async (req, res) => {
 
 /**
  * PUT /api/tasks/:id
- * Update task status, progress, or submission
+ * Update task status, progress, or other fields
  */
 router.put("/:id", async (req, res) => {
   const { id } = req.params;
@@ -108,12 +136,21 @@ router.put("/:id", async (req, res) => {
 
   try {
     updates.updated_at = new Date().toISOString();
-    const { data } = await supabase.from("tasks").update(updates).eq("id", id).select().maybeSingle();
+    const { data, error } = await supabase
+      .from("tasks")
+      .update(updates)
+      .eq("id", id)
+      .select()
+      .maybeSingle();
+
+    if (error) {
+      return res.status(500).json({ success: false, error: "Failed to update task: " + error.message });
+    }
 
     return res.json({
       success: true,
       message: "Task updated successfully",
-      data: data || { id, ...updates },
+      data,
     });
   } catch (err) {
     console.error("Update task error:", err);
