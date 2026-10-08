@@ -16,7 +16,15 @@ import profileRoutes from "./routes/profileRoutes.js";
 import attendanceRoutes from "./routes/attendanceRoutes.js";
 import certificateRoutes from "./routes/certificateRoutes.js";
 
+import path from "path";
+import { fileURLToPath } from "url";
+import fs from "fs";
+
 dotenv.config();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const distPath = path.resolve(__dirname, "../../dist");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -29,6 +37,8 @@ const allowedOrigins = [
   "http://localhost:5173",
   "http://localhost:3000",
   "http://127.0.0.1:5173",
+  "http://localhost:5000",
+  "http://127.0.0.1:5000",
 ].filter(Boolean); // remove undefined/empty entries
 
 app.use(
@@ -61,15 +71,15 @@ app.use(
 );
 app.use(express.urlencoded({ extended: true }));
 
-// ─── Service Health & API Root ────────────────────────────────────────────────
-app.get("/", (_req, res) => {
+// ─── Service Health & API Root (/api and /api/health) ────────────────────────
+const handleHealthCheck = (_req, res) => {
   res.json({
     status: "online",
     service: "Research ERP Backend Engine",
     architecture: "Node.js + Express + Supabase + GitHub Webhooks + Code Execution Engine",
     version: "2.0.0",
     environment: process.env.NODE_ENV || "development",
-    frontendUrl: process.env.FRONTEND_URL || "not configured",
+    frontendUrl: process.env.FRONTEND_URL || "same-origin",
     endpoints: [
       "/api/auth/login",
       "/api/auth/me",
@@ -81,6 +91,7 @@ app.get("/", (_req, res) => {
       "/api/notifications",
       "/api/profiles",
       "/api/attendance",
+      "/api/certificates",
       "/api/github/repos",
       "/api/github/commits",
       "/api/github/webhook",
@@ -88,7 +99,10 @@ app.get("/", (_req, res) => {
       "/api/executions",
     ],
   });
-});
+};
+
+app.get("/api", handleHealthCheck);
+app.get("/api/health", handleHealthCheck);
 
 // ─── Mount Modular API Routes ─────────────────────────────────────────────────
 app.use("/api/auth", authRoutes);
@@ -101,7 +115,48 @@ app.use("/api/profiles", profileRoutes);
 app.use("/api/attendance", attendanceRoutes);
 app.use("/api/certificates", certificateRoutes);
 app.use("/api/github", githubRoutes);
-app.use("/api/executions", executionRoutes);
+// ─── Serve Frontend Application (Same-Host Setup) ─────────────────────────────
+// Serve static assets compiled by Vite from the 'dist' directory
+if (fs.existsSync(distPath)) {
+  app.use(express.static(distPath));
+
+  // SPA fallback: any GET request not starting with /api returns index.html
+  app.get(/(.*)/, (req, res, next) => {
+    if (req.path.startsWith("/api")) {
+      return res.status(404).json({ error: `API endpoint '${req.path}' not found` });
+    }
+    res.sendFile(path.join(distPath, "index.html"));
+  });
+} else {
+  // Helpful handler if frontend hasn't been built yet
+  app.get(/(.*)/, (req, res) => {
+    if (req.path.startsWith("/api")) {
+      return res.status(404).json({ error: `API endpoint '${req.path}' not found` });
+    }
+    res.status(200).send(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Research ERP - Setup Required</title>
+          <style>
+            body { font-family: system-ui, sans-serif; padding: 3rem; background: #0f172a; color: #f8fafc; text-align: center; }
+            .card { max-width: 600px; margin: 0 auto; background: #1e293b; padding: 2rem; border-radius: 12px; border: 1px solid #334155; }
+            code { background: #090d16; padding: 4px 8px; border-radius: 4px; color: #38bdf8; }
+            h1 { color: #38bdf8; }
+          </style>
+        </head>
+        <body>
+          <div class="card">
+            <h1>Research ERP Server Running</h1>
+            <p>Backend API is live at <code>/api</code>.</p>
+            <p>To serve the frontend on this same port, build the client app by running:</p>
+            <p><code>npm run build</code></p>
+          </div>
+        </body>
+      </html>
+    `);
+  });
+}
 
 // ─── Centralized Error Handler ────────────────────────────────────────────────
 app.use(errorHandler);
